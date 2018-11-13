@@ -33,17 +33,27 @@ randkeep!(rng::AbstractRNG, rs::RandomSubSampler, elt) =
 randkeep!(rs::RandomSubSampler, elt) = randkeep!(GLOBAL_RNG, rs, elt)
 
 """
+$(SIGNATURES)
+
+Try to infer a type for the dictionary keys from `itr`.
+"""
+_inferred_keytype(key, itr) = Core.Compiler.return_type(key, (eltype(itr), ))
+
+"""
 $(FUNCTIONNAME)([rng], key, ratio, itr)
 
 Return a (lazy) iterator that randomly keeps `ratio` of `itr` by `key`.
+
+`keytype` can be provided for the dictionary.
 """
-function random_subsample(rng::AbstractRNG, key, ratio::Real, itr)
-    T = Core.Compiler.return_type(key, (eltype(itr), ))
-    rs = RandomSubSampler{T}(ratio)
+function random_subsample(rng::AbstractRNG, key, ratio::Real, itr;
+                          keytype = _inferred_keytype(key, itr))
+    rs = RandomSubSampler{keytype}(ratio)
     Iterators.filter(elt -> randkeep!(rng, rs, key(elt)), itr)
 end
 
-random_subsample(key, ratio::Real, itr) =
-    random_subsample(GLOBAL_RNG, key, ratio, itr)
+random_subsample(key, ratio::Real, itr;
+                 keytype = _inferred_keytype(key, itr)) =
+    random_subsample(GLOBAL_RNG, key, ratio, itr; keytype = keytype)
 
 end # module
